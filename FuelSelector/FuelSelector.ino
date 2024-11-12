@@ -73,7 +73,7 @@ int currDirection = 0.0;
 long mapInputToSteps(double fuelSelector){
   if (fuelSelector >= 2.0) fuelSelector = 2.0;
   if (fuelSelector <= 0.0) fuelSelector = 0.0;
-  //fuelSelector = fuelSelector * (2.5 / 2.0); // for remapping in case of falling short for knob travel
+  fuelSelector = fuelSelector * (1.8 / 2.0); // for remapping in case of falling short for knob travel
   long steps = fuelSelector * fullRevolutionSteps;
   return steps;
 }
@@ -96,8 +96,8 @@ while(!Serial);               // Wait for serial port to connect
   driver.toff(4);          // Enable driver (off_time)
   driver.rms_current(800); // Set motor current (mA)
   driver.microsteps(16);   // Set microstepping (16 microsteps per step)
-  stepper.setMaxSpeed(5000);
-  stepper.setAcceleration(5000);
+  stepper.setMaxSpeed(3000);
+  stepper.setAcceleration(3000);
 
 
 
