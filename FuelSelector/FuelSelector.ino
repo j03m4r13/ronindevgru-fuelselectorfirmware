@@ -53,7 +53,7 @@ bool shaft = false;
 double currSelectorPosition = 0.0;
 double prevSelectorPosition = -1.0;
 float midPoint = 0.07;
-long fullRevolutionSteps = 450;
+long fullRevolutionSteps = 3200;
 long midStepper = fullRevolutionSteps / 2;
 float pointer = 0.0;
 String planeTrimData;
@@ -73,7 +73,7 @@ int currDirection = 0.0;
 long mapInputToSteps(double fuelSelector){
   if (fuelSelector >= 2.0) fuelSelector = 2.0;
   if (fuelSelector <= 0.0) fuelSelector = 0.0;
-  fuelSelector = fuelSelector * (2.5 / 2.0); // for remapping in case of falling short for knob travel
+  //fuelSelector = fuelSelector * (2.5 / 2.0); // for remapping in case of falling short for knob travel
   long steps = fuelSelector * fullRevolutionSteps;
   return steps;
 }
@@ -96,8 +96,8 @@ while(!Serial);               // Wait for serial port to connect
   driver.toff(4);          // Enable driver (off_time)
   driver.rms_current(800); // Set motor current (mA)
   driver.microsteps(16);   // Set microstepping (16 microsteps per step)
-  stepper.setMaxSpeed(1000);
-  stepper.setAcceleration(1000);
+  stepper.setMaxSpeed(5000);
+  stepper.setAcceleration(5000);
 
 
 
@@ -149,7 +149,7 @@ void homeStepper(){
         bool rightFound = false;
         int counter = 0;
         stepper.setCurrentPosition(0.0);
-        stepper.moveTo(-800); // rotate full to search
+        stepper.moveTo(3200); // rotate full to search
         // Keep running the stepper
         while (stepper.distanceToGo() != 0) {
           
@@ -159,7 +159,7 @@ void homeStepper(){
               if (RButton == LOW) { // found RIGHT position
 
                 stepper.stop();
-                stepper.setCurrentPosition(mapInputToSteps(1.0));
+                stepper.setCurrentPosition(mapInputToSteps(1.0)*-1);
                 return;
               }
 
@@ -167,7 +167,7 @@ void homeStepper(){
           stepper.run();  // Run the motor to the target position
 
         }
-        stepper.setCurrentPosition(mapInputToSteps(1.0)); // JUST SET TO R FOR NOW
+        stepper.setCurrentPosition(mapInputToSteps(1.0)*-1); // JUST SET TO R FOR NOW
 }
 void loop() {
   static int dir = 0;
@@ -288,7 +288,7 @@ void loop() {
 
       if (autoSelectMode == AUTO_SELECT && currSelectorPosition  <= 2.0 && currSelectorPosition >= 1.0){
         long steps = mapInputToSteps(currSelectorPosition);
-        stepper.moveTo(steps);
+        stepper.moveTo(steps*-1);
         // Keep running the stepper
         while (stepper.distanceToGo() != 0) {
           stepper.run();  // Run the motor to the target position
@@ -300,7 +300,7 @@ void loop() {
         }
       } else if (autoSelectMode == MANUAL_SELECT && currSelectorPosition  <= 2.0 && currSelectorPosition >= 1.0) {
         long steps = mapInputToSteps(currSelectorPosition);
-        stepper.setCurrentPosition(steps); // no physical movements, just setting the position internally
+        stepper.setCurrentPosition(steps*-1); // no physical movements, just setting the position internally
       }
     prevSelectorPosition = currSelectorPosition;
   }
