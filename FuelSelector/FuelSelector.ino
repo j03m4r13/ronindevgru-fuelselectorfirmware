@@ -73,7 +73,7 @@ int currDirection = 0.0;
 long mapInputToSteps(double fuelSelector){
   if (fuelSelector >= 2.0) fuelSelector = 2.0;
   if (fuelSelector <= 0.0) fuelSelector = 0.0;
-  fuelSelector = fuelSelector * (1.8 / 2.0); // for remapping in case of falling short for knob travel
+  fuelSelector = fuelSelector * (1.39 / 2.0); // for remapping in case of falling short for knob travel
   long steps = fuelSelector * fullRevolutionSteps;
   return steps;
 }
@@ -187,19 +187,19 @@ void loop() {
         masterTriggered = true;
               
 
-        LButtonState = 0;
-        lastLButtonState = 0;
-        lastLDebounceTime = 0;  // the last time the output pin was toggled
-        RButtonState = 0;
-        lastRButtonState = 0;
-        lastRDebounceTime = 0;  // the last time the output pin was toggled
-        OButtonState = 0;
-        lastOButtonState = 0;
-        lastODebounceTime = 0;  // the last time the output pin was toggled
-        MButtonState = 0;
-        lastMButtonState = 0;
-        lastMDebounceTime = 0;  // the last time the output pin was toggled
-        lastDirection = -1.0;
+        // LButtonState = 0;
+        // lastLButtonState = 0;
+        // lastLDebounceTime = 0;  // the last time the output pin was toggled
+        // RButtonState = 0;
+        // lastRButtonState = 0;
+        // lastRDebounceTime = 0;  // the last time the output pin was toggled
+        // OButtonState = 0;
+        // lastOButtonState = 0;
+        // lastODebounceTime = 0;  // the last time the output pin was toggled
+        // MButtonState = 0;
+        // lastMButtonState = 0;
+        // lastMDebounceTime = 0;  // the last time the output pin was toggled
+        // lastDirection = -1.0;
 
       } else {
         masterTriggered = false;
@@ -251,6 +251,7 @@ void loop() {
     if ((millis() - lastODebounceTime) > debounceDelay) {
         if (OButton == LOW) {
           Serial.println("0");
+          digitalWrite(EN_PIN, HIGH);
           lastDirection = currDirection;
           lastRButtonState = 0; //since Right is already ON even when master is at off position
         }
