@@ -265,10 +265,13 @@ void loop() {
       hasSentAPOff = false;
       hasHomed = false;
       autoSelectMode = AUTO_SELECT;
-      digitalWrite(EN_PIN, LOW);
-      homeStepper();
-      currSelectorPosition = 1.0; //RESET TO right;
-      prevSelectorPosition = 1.0;
+      if (masterTriggered) {
+        digitalWrite(EN_PIN, LOW);
+        homeStepper();
+        currSelectorPosition = 1.0; //RESET TO right;
+        prevSelectorPosition = 1.0;
+      }
+
       // long steps = mapInputToSteps(currSelectorPosition);
       // stepper.setCurrentPosition(steps); // no physical movements, just setting the position internally
     } else if (inputString == "T\n"){
