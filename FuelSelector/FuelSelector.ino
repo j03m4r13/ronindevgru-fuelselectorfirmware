@@ -218,8 +218,6 @@ void loop() {
   if (autoSelectMode == MANUAL_SELECT && masterTriggered ){
     LButton = digitalRead(L_SWITCH);
     RButton = digitalRead(R_SWITCH);
-    OButton = digitalRead(O_SWITCH);
-
 
 
     if (lastLButtonState != LButton){
@@ -282,13 +280,12 @@ void loop() {
 
     if ((millis() - lastSHIFTDebounceTime) > debounceDelay) {
       if (SHIFTButton == LOW) {
-        
-        lastDirection = currDirection;
         Serial.println("4"); // SHIFT
-
       } else {
-        Serial.println("5"); // SHIFT
+        Serial.println("5"); // 
+
       }
+      lastDirection = currDirection;
       SHIFTButtonState = SHIFTButton;
     }
   }
