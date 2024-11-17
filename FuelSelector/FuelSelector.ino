@@ -9,19 +9,20 @@
 #define LEFT 1
 #define RIGHT 2
 #define OFF 3
+#define SHIFT 4
 
 #define STALL_VALUE     100 // [0..255]
 #define R_SWITCH 10
 #define L_SWITCH 14
 #define O_SWITCH 16
 #define MICRO_SWITCH 9
-
+#define SHIFT_SWITCH 15
 #define EN_PIN           6 // Enable
 #define DIR_PIN          7 // Direction
 #define STEP_PIN         8 // Step
 #define SW_RX            4 // TMC2208/TMC2224 SoftwareSerial receive pin
 #define SW_TX            5 // TMC2208/TMC2224 SoftwareSerial transmit pin
-#define SHIFT_PIN        15
+
 #define DRIVER_ADDRESS 0b00 // TMC2209 Driver address according to MS1 and MS2
 #define R_SENSE 0.11f // Match to your driver
                       // SilentStepStick series use 0.11
@@ -43,11 +44,16 @@ int OButtonState = 0;
 int lastOButtonState = 0;
 unsigned long lastODebounceTime = 0;  // the last time the output pin was toggled
 
-unsigned long debounceDelay = 50;    // the debounce time; increase if the output flickers
-
 int MButtonState = 0;
 int lastMButtonState = 0;
 unsigned long lastMDebounceTime = 0;  // the last time the output pin was toggled
+
+int  SHIFTButtonState = 0;
+int lastSHIFTButtonState = 0;
+unsigned long lastSHIFTDebounceTime = 0;  // the last time the output pin was toggled
+
+unsigned long debounceDelay = 50;    // the debounce time; increase if the output flickers
+
 
 bool shaft = false;
 double currSelectorPosition = 0.0;
@@ -87,7 +93,7 @@ while(!Serial);               // Wait for serial port to connect
   pinMode(R_SWITCH, INPUT);
   pinMode(O_SWITCH, INPUT);
   pinMode(MICRO_SWITCH, INPUT);
-  pinMode(SHIFT_PIN, INPUT);
+  pinMode(SHIFT_SWITCH, INPUT);
   pinMode(EN_PIN, OUTPUT);
   pinMode(STEP_PIN, OUTPUT);
   pinMode(DIR_PIN, OUTPUT);
@@ -110,14 +116,19 @@ while(!Serial);               // Wait for serial port to connect
   OButtonState = 0;
   lastOButtonState = 0;
   lastODebounceTime = 0;  // the last time the output pin was toggled
-  MButtonState = 0;
-  lastMButtonState = 0;
+  MButtonState = -1;
+  lastMButtonState = -1;
   lastMDebounceTime = 0;  // the last time the output pin was toggled
+  SHIFTButtonState = 0;
+  lastSHIFTButtonState = 0;
+  lastSHIFTDebounceTime = 0;  // the last time the output pin was toggled
+
   autoSelectMode = MANUAL_SELECT;
   currSelectorPosition = 0.0;
   prevSelectorPosition = -1.0;
   hasHomed = false;
   masterTriggered = false;
+ 
   lastDirection = 0.0;
   currDirection = 0.0;
 
@@ -172,45 +183,43 @@ void homeStepper(){
 void loop() {
   static int dir = 0;
   static int manual_dir = 0;
+  static bool masterPrevStatus = false;
   int LButton;
   int RButton;
   int OButton;
   int MButton;
+  int SHIFTButton;
 
   int currManualDir = 0;
+
   MButton = digitalRead(MICRO_SWITCH);
   if (lastMButtonState != MButton){
     lastMDebounceTime = millis();
   }
   if ((millis() - lastMDebounceTime) > debounceDelay) {
+    if(MButtonState != MButton) {
       if (MButton == LOW) { // microswitch triggered
         masterTriggered = true;
-              
-
-        // LButtonState = 0;
-        // lastLButtonState = 0;
-        // lastLDebounceTime = 0;  // the last time the output pin was toggled
-        // RButtonState = 0;
-        // lastRButtonState = 0;
-        // lastRDebounceTime = 0;  // the last time the output pin was toggled
-        // OButtonState = 0;
-        // lastOButtonState = 0;
-        // lastODebounceTime = 0;  // the last time the output pin was toggled
-        // MButtonState = 0;
-        // lastMButtonState = 0;
-        // lastMDebounceTime = 0;  // the last time the output pin was toggled
-        // lastDirection = -1.0;
+        if(autoSelectMode == AUTO_SELECT) {
+           digitalWrite(EN_PIN, LOW); // turn on stepper when in auto select mode when activating micro switch
+        }
+        Serial.println("1"); // At this point R is also active so just send 1 to plugin
 
       } else {
         masterTriggered = false;
         digitalWrite(EN_PIN, HIGH); // disable stepper when master is disengaged
       }
       MButtonState = MButton;
+      masterPrevStatus = masterTriggered;
+    }
+
   }
 
   if (autoSelectMode == MANUAL_SELECT && masterTriggered ){
     LButton = digitalRead(L_SWITCH);
     RButton = digitalRead(R_SWITCH);
+    OButton = digitalRead(O_SWITCH);
+
 
 
     if (lastLButtonState != LButton){
@@ -221,10 +230,14 @@ void loop() {
       lastRDebounceTime = millis();
       currDirection = RIGHT;
     }
+    if (lastOButtonState != OButton){
+      lastODebounceTime = millis();
+      currDirection = OFF;
+    }
 
 
     if ((millis() - lastLDebounceTime) > debounceDelay) {
-        if (LButton == LOW && currDirection != lastDirection) {
+        if (LButton == LOW) {
           
           lastDirection = currDirection;
           Serial.println("2");
@@ -232,7 +245,7 @@ void loop() {
         LButtonState = LButton;
     }
     if ((millis() - lastRDebounceTime) > debounceDelay) {
-        if (RButton == LOW && currDirection != lastDirection) {
+        if (RButton == LOW) {
           
           lastDirection = currDirection;
           Serial.println("1");
@@ -240,6 +253,7 @@ void loop() {
         }
         RButtonState = RButton;
     }
+
 
   } else if (autoSelectMode == MANUAL_SELECT && !masterTriggered) {
     OButton = digitalRead(O_SWITCH);
@@ -250,7 +264,7 @@ void loop() {
     }
     if ((millis() - lastODebounceTime) > debounceDelay) {
         if (OButton == LOW) {
-          Serial.println("0");
+          Serial.println("3"); // OFF
           digitalWrite(EN_PIN, HIGH);
           lastDirection = currDirection;
           lastRButtonState = 0; //since Right is already ON even when master is at off position
@@ -259,6 +273,25 @@ void loop() {
     }
   }
 
+  if(autoSelectMode == AUTO_SELECT && masterTriggered){
+    SHIFTButton = digitalRead(SHIFT_SWITCH);
+    if (lastSHIFTButtonState != SHIFTButton){
+      lastSHIFTDebounceTime = millis();
+      currDirection = SHIFT;
+    }
+
+    if ((millis() - lastSHIFTDebounceTime) > debounceDelay) {
+      if (SHIFTButton == LOW) {
+        
+        lastDirection = currDirection;
+        Serial.println("4"); // SHIFT
+
+      } else {
+        Serial.println("5"); // SHIFT
+      }
+      SHIFTButtonState = SHIFTButton;
+    }
+  }
     // Check if a message has been completed
   if (stringComplete) {
     if (inputString == "R\n"){
@@ -313,6 +346,7 @@ void loop() {
   lastRButtonState = RButton;
   lastOButtonState = OButton;
   lastMButtonState = MButton;
+  lastSHIFTButtonState = SHIFTButton;
 }
 void serialEvent() {
   while (Serial.available()) {
